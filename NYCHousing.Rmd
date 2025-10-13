@@ -1,0 +1,244 @@
+---
+title: Predicting the Income of NYC Residents
+author:
+- Danny Weng
+date: "March 13, 2024"
+output:
+  html_document:
+    code_folding: show
+    theme: cosmo
+    toc: yes
+    toc_float: yes
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+optin: TRUE
+---
+
+```{r, include=FALSE}
+###########################
+# STYLE EDITS: IGNORE THIS
+###########################
+knitr::opts_chunk$set(message = FALSE) # include this if you don't want markdown to knit messages
+knitr::opts_chunk$set(warning = FALSE) # include this if you don't want markdown to knit warnings
+knitr::opts_chunk$set(echo = FALSE) # set echo=FALSE to hide code from html output
+```
+
+
+```{r}
+
+library("knitr")
+library("kableExtra")
+library("pander")
+library("readr")
+library("magrittr")
+library("car")
+library("interactions")
+library("leaps")
+
+```
+
+```{r, echo=FALSE}
+nyc <- readr::read_csv("nyc.csv")
+```
+
+# Introduction
+As the largest and one of the most diverse cities in the United States with a population of around 8.5 million, New York City is renowned worldwide as a vibrant cultural and financial hub. However, despite its allure of diverse cuisine and iconic skyline views, NYC is notoriously expensive when it comes to housing costs and rental prices. To better comprehend this housing crisis, the New York City Housing and Vacancy Survey is conducted every three years to assess residential conditions across the city. In this project, we aim to leverage variables such as age, housing maintenance deficiencies, and duration of residence to build a linear regression model that can provide insights into understanding and predicting household income levels in NYC.
+
+# Exploratory Data Analysis
+For our analysis, we are given a sample of 299 New York households (data from The New York City Housing and Vacancy Survey). In order to better understand income in NYC, we examine the relationship between total household income and the age, maintenance deficiencies, and year the respondent moved to New York City. We summarize the variables as follows:
+
+Income: total household income (in $) [the response variable]
+
+Age: respondent’s age (in years)
+
+MaintenanceDef : number of maintenance deficiencies of the residence, between 2002 and 2005
+
+NYCMove: the year the respondent moved to New York City
+
+The first first few lines of data appear as follows:
+```{r echo=FALSE}
+head(nyc)
+```
+## Univariate Exploration
+
+To begin our analysis, we will individually examine each variable in the dataset. For the quantitative variables, such as Income, Age, and MaintenanceDef, and NYCMove, we will utilize histograms to visualize and understand their distributions. Since our dataset does not contain any categorical variables, we will not need to employ bar plots for exploration in this particular case. Our graphs are shown as follows:
+
+```{r echo=FALSE}
+hist((nyc$Income),
+     main = "Frequency of Income",
+     xlab = "Income (in $)")
+```
+
+```{r echo=FALSE}
+hist(nyc$Age,
+     main = "Frequency of Age",
+     xlab = "Age (in years)")
+```
+
+```{r echo=FALSE}
+hist(nyc$MaintenanceDef,
+     main = "Frequency of Maintenance Deficiencies",
+     xlab = "Maintenance Deficiencies Between 2002 and 2005")
+```
+
+```{r echo=FALSE}
+hist(nyc$NYCMove,
+     main = "Frequency of NYCMove",
+     xlab = "Year Respondent Moved to New York City")
+```
+
+We supplment the univariate graphical summary with numerical summaries, as follows:
+
+Summary of Income:
+```{r echo=FALSE}
+summary(nyc$Income)
+```
+
+Summary of Age:
+```{r echo=FALSE}
+summary(nyc$Age)
+```
+
+Summary of MaintenanceDef:
+```{r echo=FALSE}
+summary(nyc$MaintenanceDef)
+```
+
+Summary of NYCMove:
+```{r echo=FALSE}
+summary(nyc$NYCMove)
+```
+
+## Univariate Observations
+After examining the graphs and summary statistics of our variables, we can make the following observations:
+
+Income: The distribution of total household income is right-skewed and bimodal. This distribution appears to have peaks around 10,000 to 20,000 dollars and 30,000 to 40,000 dollars, with a median income of 39,000 dollars and mean income of 42,266 dollars. The interquartile range is 36,800 dollars, and the range is 96,560 dollars.
+
+Age: The distribution of respondents' ages is reasonably normal and unimodal. The distribution has a peak between 45 to 50 years old, with a median age of 49 years and mean age of 50.03 years. The interquartile range for age is 16 years, and the range is 59 years.
+
+Maintenance Deficiencies: The distribution of the number of maintenance deficiencies in residences between 2002 and 2005 is highly right-skewed and unimodal. The distribution holds a peak between 0 to 1 deficiencies, with a median of 2 and mean of 1.98 deficiencies. The interquartile range of the distribution is 1, and the range is 8.
+
+NYCMove: The distribution of the year respondents moved to NYC is left-skewed and bimodal. The distribution has peaks between 1975 to 1980 and 1995 to 2000, with a median of 1985 and mean of 1983. The interquartile range is 22 years, and the overall range is 62 years.
+
+## Bivariate Exploration
+
+Now that we have seen the distributions of each individual variable, we want to look at how each preictor variable interacts with our response variable, Income. To do so, we will use dot plots as shown below:
+
+```{r echo=FALSE}
+plot(nyc$Income ~ nyc$Age,
+     main = "Income vs Age",
+     xlab = "Respondent Age (in years)",
+     ylab = "Total Household Income (in $)")
+```
+
+```{r echo=FALSE}
+plot(nyc$Income ~ nyc$MaintenanceDef,
+     main = "Income vs MaintenanceDef",
+     xlab = "Number of Maintenance Deficiencies Between 2002 and 2005",
+     ylab = "Total Household Income (in $)")
+```
+
+```{r echo=FALSE}
+plot(nyc$Income ~ nyc$NYCMove,
+     main = "Income vs NYCMove",
+     xlab = "Year Respondent Moved to New York City",
+     ylab = "Total Household Income (in $)")
+```
+
+## Bivariate Observations
+
+Based on the scatter plots, there does not appear to be a strong linear relationship between total household income and any of the quantitative variables: age, maintenance deficiencies, or the year the respondent moved to NYC. The relationships seem to be quite scattered, making it difficult to discern clear positive or negative associations simply from visual inspection.
+
+Further statistical modeling and techniques will be necessary to uncover any potential patterns or dependencies that may exist within the data.
+
+# Modeling
+
+After exploring the variable relationships, we'll build a linear regression model to predict total household income. Before that, we need to check for multicollinearity among the explanatory variables: age, maintenance deficiencies, and year moved to NYC. One way to detect multicollinearity is by examining the pairs plot for strong correlations between variable pairs. If multicollinearity exists, we'll address it through techniques like variable selection or transformation to ensure a valid regression model. Once multicollinearity concerns are resolved, we'll construct the linear model to understand how these variables influence household income and enable accurate predictions. Throughout, we'll monitor model assumptions and diagnostics for robustness.
+
+```{r echo=FALSE}
+plot(nyc)
+```
+
+There appear to be some linear relationships among the variables. Notably, there is a negative linear correlation between Age and NYCMove. Given the possibility of multicollinearity, it is prudent to assess the variation inflation factors (VIF) for these variables within a comprehensive multilinear regression model aimed at predicting total household income (in $). The VIF values are shown below:
+
+```{r echo=FALSE}
+nyc.mod <- lm(Income ~ Age + MaintenanceDef + NYCMove,
+data = nyc)
+```
+
+```{r echo=FALSE}
+car::vif(nyc.mod)
+```
+
+After confirming that none of the variables have a VIF above 2.5, we can conclude that multicollinearity is not an issue. Next, we must verify the population error assumptions by examining the residual and normal Q-Q plots. The residual plot will indicate if the residuals are independent, have a mean of 0, and have constant variance (homoscedasticity). The normal Q-Q plot will assess if the residuals are normally distributed. If the residuals exhibit independence, a mean of zero, constant variance across predicted values, and normality, we can conclude that the population error assumptions are met, validating our linear regression model for reliable inferences.
+
+```{r echo=FALSE}
+plot(nyc.mod, which = 1)
+```
+
+```{r echo=FALSE}
+plot(nyc.mod, which = 2)
+```
+
+As seen in the residual plot and the qq plot above, all of our error assumptions have been fufilled.
+
+**Independence**: the residuals are randomly scattered above and below the zero line
+
+**Mean Zero**: the residuals appear to be centered around the zero line
+
+**Constant Variance**: residuals appear to have a constant spread around the zero line
+
+**Normality**: The residuals appear to follow the diagonal on the qq plot for the most part
+
+Because all our error assumptions are fufilled, our model is deemed suitable for constructing a linear regression model to analyze and predict income. The summary of this model is shown below:
+
+```{r echo=FALSE}
+summary(lm(formula = Income ~ Age + MaintenanceDef + NYCMove, data = nyc))
+```
+
+This model with all three variables is significant as indicated by the regression F-test p-value of 0.03005. However, we would still like to compare it to other models including two variables in order to see if it produces the highest R^2 value. Becuase we know that the individual variables do not appear to have a linear relationship to Income, as shown earlier, we can skip them. The models using two variables are shown below:
+
+**Model using MaintenanceDef and NYCMove**:
+```{r echo=FALSE}
+summary(lm(formula = Income ~ MaintenanceDef + NYCMove, data = nyc))
+```
+
+**Model using Age and NYCMove**:
+```{r echo=FALSE}
+summary(lm(formula = Income ~ Age + NYCMove, data = nyc))
+```
+
+**Model using Age & MaintenanceDef**:
+```{r echo=FALSE}
+summary(lm(formula = Income ~ Age + MaintenanceDef, data = nyc))
+```
+
+The model using MaintenanceDef and NYCMove, and the model using Age & MaintenanceDef are also significant as shown in their F-test p-values. Our model that utilizes all three variables, however, holds the largest R^2 value, meaning it is the most reasonable model to predict total household income (since it explains the most variance in Income).
+
+# Prediction
+
+Using this model, we can help the client predict income for a household with three maintenance
+deficiencies, whose respondent’s age is 53 and who moved to NYC in 1987.
+
+Applying our model to the given prediction parameters, we find the following:
+
+```{r}
+237408.41 - 71.98 * 53 - 2273.22 * 3 - 94.34 * 1987
+```
+It is predicted that the income for a household with three maintenance deficiencies, whose respondent’s age is 53 and who moved to NYC in 1987 is $39,320.23, on average.
+
+# Discussion
+
+This project aimed to understand the factors influencing total household income in New York City by analyzing data from the New York City Housing and Vacancy Survey. Our analysis revealed that the respondent's age, the number of maintenance deficiencies in their residence between 2002 and 2005, and the year they moved to NYC are related to their total household income.
+
+The linear regression model incorporating all three variables yielded the highest R-squared value of 0.02981 and a statistically significant p-value of 0.03005. This suggests that while these variables collectively contribute to explaining variations in household income, the model's predictive power is relatively low.
+
+It's important to note that our analysis identified a few outliers in the residual and normal Q-Q plots, although this issue was mitigated by our reasonably large sample size. Despite these outliers, the residuals were generally normally distributed and independent, satisfying the population error assumptions required for valid inferences from the linear regression model.
+
+While our model provides some insights, the low R-squared value suggests that there may be other crucial factors not captured in our analysis that could better explain and predict total household income in NYC. Future research could explore additional variables, such as highest education level, career field, or neighborhood characteristics, to potentially improve the model's predictive power.
+
+As New York City continues to grow and the cost of living escalates, understanding the dynamics of household income becomes increasingly crucial. Well-designed surveys like the New York City Housing and Vacancy Survey play a vital role in providing data for analysts to uncover patterns and inform policies that promote housing affordability and economic opportunities for residents across various demographics and living situations.
+
+Looking ahead, further research in this area could delve deeper into the complex interplay of socioeconomic factors, housing conditions, and income levels. By continuously refining our understanding through data-driven analysis, we can better shape the future of this vibrant metropolitan area, ensuring access to decent living standards and economic stability for all New Yorkers.
