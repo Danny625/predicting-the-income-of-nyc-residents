@@ -1,84 +1,105 @@
-Predicting the Income of NYC Residents
+# 🏙️ Predicting NYC Household Income
 
-Author: Danny Weng
-Date: March 13, 2024
-Course: Statistical Computing — 36-350
+A small regression analysis project using New York City housing survey data.
 
-Overview
+I used a sample of NYC households to explore whether age, housing maintenance deficiencies, and year moved to New York City can help explain household income. The project is written in R Markdown and focuses on exploratory analysis, linear regression, model diagnostics, and interpretation.
 
-New York City, home to roughly 8.5 million residents, is one of the most diverse and economically dynamic cities in the world. However, despite its cultural vibrancy, the city faces a long-standing housing affordability crisis.
-This project uses data from the New York City Housing and Vacancy Survey (NYCHVS) to analyze how demographic and housing-related variables influence household income.
-We apply linear regression modeling to study the effects of age, housing maintenance deficiencies, and the year of moving to NYC on income levels.
+## 🛠 Tools
 
-Data Description
+- R
+- R Markdown
+- tidyverse / readr
+- car
+- kableExtra
+- linear regression
+- model diagnostics
 
-The dataset includes information from 299 New York households.
+## ✨ What it analyzes
 
-Variables:
+### Household income
 
-Income – Total household income (USD) (response variable)
+The response variable is total household income. The analysis looks at how income varies across the sample and whether it can be explained by housing and demographic variables.
 
-Age – Age of respondent (years)
+### Predictor variables
 
-MaintenanceDef – Number of maintenance deficiencies (2002–2005)
+The model uses:
 
-NYCMove – Year respondent moved to New York City
+- respondent age
+- number of housing maintenance deficiencies
+- year the respondent moved to NYC
 
-Analysis Summary
+### Regression modeling
 
-Exploratory Data Analysis:
+I fit and compared several linear regression models, then checked assumptions using residual plots, Q-Q plots, and VIF values for multicollinearity.
 
-Histograms and summary statistics show right-skewed income and maintenance distributions.
+The final model using all three predictors had the highest R-squared value among the models tested, but the overall predictive power was still low. That was one of the main takeaways: the variables are related to income, but they do not explain most of the variation.
 
-Age is approximately normal; NYCMove is left-skewed.
+## 🚦 How to run
 
-Scatter plots indicate no strong linear patterns with income.
+### 1. Clone the repo
 
-Modeling:
+```bash
+git clone https://github.com/Danny625/YOUR_REPO_NAME.git
+cd YOUR_REPO_NAME
+```
 
-Model: Income ~ Age + MaintenanceDef + NYCMove
+### 2. Install packages
 
-Checked multicollinearity using VIF (none above 2.5).
+Open R or RStudio and run:
 
-Verified regression assumptions using residual and Q-Q plots.
+```r
+install.packages(c(
+  "knitr",
+  "kableExtra",
+  "pander",
+  "readr",
+  "magrittr",
+  "car",
+  "interactions",
+  "leaps"
+))
+```
 
-Model R² = 0.0298, p-value = 0.030, suggesting modest significance.
+### 3. Add the data
 
-Prediction Example:
-For a 53-year-old respondent with 3 maintenance deficiencies who moved to NYC in 1987,
-predicted income = $39,320.23.
+Make sure the dataset is in the project folder:
 
-Findings & Discussion
+```text
+nyc.csv
+```
 
-The three predictors jointly explain a small but statistically significant portion of income variation.
+### 4. Knit the report
 
-Model assumptions are satisfied, but low R² suggests that additional variables (education, occupation, borough) could better explain income differences.
+Open the `.Rmd` file in RStudio and click **Knit**, or run:
 
-Insights from this model highlight how housing quality and residential history may relate to income inequality across NYC households.
+```r
+rmarkdown::render("YOUR_FILE_NAME.Rmd")
+```
 
-Future Work
+## 📁 Project files
 
-Add socioeconomic predictors like education level or job sector.
+```text
+.
+├── README.md
+├── NYCHousing.pdf          # Rendered report
+├── YOUR_FILE_NAME.Rmd      # Main analysis file
+└── nyc.csv                 # NYC housing survey sample
+```
 
-Explore nonlinear or interaction effects.
+## 🤖 How it works
 
-Evaluate predictive performance with cross-validation.
+The analysis starts by exploring the distributions of income, age, maintenance deficiencies, and year moved to NYC. Then it checks the relationships between income and each predictor using scatter plots.
 
-Reproducibility
+After that, I fit a multiple linear regression model, checked for multicollinearity with VIF, reviewed residual diagnostics, compared smaller models, and used the final model to make an example income prediction.
 
-Language: R
-Key Packages: knitr, kableExtra, pander, readr, magrittr, car, interactions, leaps
+## 📌 Main takeaways
 
-How to run:
+- Income in the sample is right-skewed and bimodal.
+- The predictors do not show strong linear relationships with income on their own.
+- Maintenance deficiencies had the clearest individual signal in the regression output.
+- The full model was statistically significant, but the R-squared was low.
+- More variables like education, occupation, borough, or neighborhood would likely improve prediction.
 
-Clone this repository.
+## 👤 Author
 
-Open the .Rmd file in RStudio.
-
-Install all required packages.
-
-Knit to HTML or PDF to reproduce analysis.
-
-License
-
-MIT License
+Danny Weng
